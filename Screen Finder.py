@@ -5,15 +5,11 @@ import utlis
 
 ########################################################################
 webCamFeed = True
+pathImage = "1.jpg"
 
-pathImage = cv2.imread(r'C:\Users\umarn\PycharmProjects\opencvPython\2.jpg')
+cap = cv2.VideoCapture(r'C:\Users\umarn\Videos\Logitech\LogiCapture\Test.mp4')
 
-cap = cv2.VideoCapture(r'C:\Users\umarn\Videos\Logitech\LogiCapture\Test2.mp4')
-
-cap.set(3,640)
-cap.set(4,480)
 cap.set(10,160)
-
 heightImg = 480
 widthImg  = 640
 ########################################################################
@@ -22,8 +18,9 @@ utlis.initializeTrackbars()
 count=0
 
 while True:
-    #img = cap.read()
-    img = pathImage
+
+    if webCamFeed:success, img = cap.read()
+    else:img = cv2.imread(pathImage)
     img = cv2.resize(img, (widthImg, heightImg)) # RESIZE IMAGE
     imgBlank = np.zeros((heightImg,widthImg, 3), np.uint8) # CREATE A BLANK IMAGE FOR TESTING DEBUGING IF REQUIRED
     imgGray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY) # CONVERT IMAGE TO GRAY SCALE
@@ -71,13 +68,13 @@ while True:
 
     else:
         imageArray = ([img,imgGray,imgThreshold,imgContours],
-                      [imgBlur, thresh, imgBlank, imgBlank])
+                      [imgBlank, imgBlank, imgBlank, imgBlank])
 
     # LABELS FOR DISPLAY
     lables = [["Original","Gray","Threshold","Contours"],
               ["Biggest Contour","Warp Prespective","Warp Gray","Adaptive Threshold"]]
 
-    stackedImage = utlis.stackImages(imageArray,0.75,lables)
+    stackedImage = utlis.stackImages(imageArray,0.6,lables)
     cv2.imshow("Result",stackedImage)
 
     # SAVE IMAGE WHEN 's' key is pressed
