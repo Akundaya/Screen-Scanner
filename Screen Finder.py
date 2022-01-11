@@ -7,7 +7,8 @@ import utlis
 webCamFeed = True
 pathImage = "1.jpg"
 
-cap = cv2.VideoCapture(r'C:\Users\umarn\Videos\Logitech\LogiCapture\Test.mp4')
+#Upload video here
+cap = cv2.VideoCapture(r'D:\Videos\Logitech\LogiCapture\Test.mp4')
 
 cap.set(10,160)
 heightImg = 480
@@ -20,7 +21,6 @@ count=0
 while True:
 
     if webCamFeed:success, img = cap.read()
-    else:img = cv2.imread(pathImage)
     img = cv2.resize(img, (widthImg, heightImg)) # RESIZE IMAGE
     imgBlank = np.zeros((heightImg,widthImg, 3), np.uint8) # CREATE A BLANK IMAGE FOR TESTING DEBUGING IF REQUIRED
     imgGray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY) # CONVERT IMAGE TO GRAY SCALE
@@ -29,7 +29,7 @@ while True:
 
     thresh = cv2.threshold(imgBlur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
 
-    imgThreshold = cv2.Canny(imgBlur,thres[0],thres[1]) # APPLY CANNY BLUR
+    imgThreshold = cv2.Canny(thresh,thres[0],thres[1]) # APPLY CANNY BLUR
     kernel = np.ones((5, 5))
     imgDial = cv2.dilate(imgThreshold, kernel, iterations=2) # APPLY DILATION
     imgThreshold = cv2.erode(imgDial, kernel, iterations=1)  # APPLY EROSION
@@ -44,11 +44,16 @@ while True:
     # FIND THE BIGGEST COUNTOUR
     biggest, maxArea = utlis.biggestContour(contours) # FIND THE BIGGEST CONTOUR
     if biggest.size != 0:
+        noScreen = 0;
         biggest=utlis.reorder(biggest)
         cv2.drawContours(imgBigContour, biggest, -1, (0, 255, 0), 20) # DRAW THE BIGGEST CONTOUR
         imgBigContour = utlis.drawRectangle(imgBigContour,biggest,2)
+
         pts1 = np.float32(biggest) # PREPARE POINTS FOR WARP
         pts2 = np.float32([[0, 0],[widthImg, 0], [0, heightImg],[widthImg, heightImg]]) # PREPARE POINTS FOR WARP
+        print("Points are:",pts2)
+        #print(pts2)
+
         matrix = cv2.getPerspectiveTransform(pts1, pts2)
         imgWarpColored = cv2.warpPerspective(img, matrix, (widthImg, heightImg))
 
@@ -67,15 +72,33 @@ while True:
                       [imgBigContour,imgWarpColored, imgWarpGray,imgAdaptiveThre])
 
     else:
+        noScreen = 1;
         imageArray = ([img,imgGray,imgThreshold,imgContours],
-                      [imgBlank, imgBlank, imgBlank, imgBlank])
+                      [imgBigContour, imgBlank, imgBlank, imgBlank])
+        imgWarpColored = img
+
 
     # LABELS FOR DISPLAY
     lables = [["Original","Gray","Threshold","Contours"],
               ["Biggest Contour","Warp Prespective","Warp Gray","Adaptive Threshold"]]
 
     stackedImage = utlis.stackImages(imageArray,0.6,lables)
-    cv2.imshow("Result",stackedImage)
+    imgOutput = imgWarpColored
+
+    if noScreen == 1:
+        imgOutput = img
+        cv2.putText(imgOutput, "Screen not Detected",
+                    (180,200),
+                    cv2.FONT_HERSHEY_DUPLEX,
+                    1,
+                    (0, 0, 255),
+                    2,
+                    cv2.LINE_AA)
+
+
+    cv2.imshow("Process",stackedImage)
+    cv2.imshow("Output",imgOutput)
+    cv2.imshow("Threshold",thresh)
 
     # SAVE IMAGE WHEN 's' key is pressed
     if cv2.waitKey(1) & 0xFF == ord('s'):
@@ -87,3 +110,4 @@ while True:
         cv2.imshow('Result', stackedImage)
         cv2.waitKey(300)
         count += 1
+
