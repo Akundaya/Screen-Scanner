@@ -1,15 +1,15 @@
 import cv2
 import numpy as np
 import utlis
+import time
 
 
 ########################################################################
 webCamFeed = True
-pathImage = "Screen.png"
 
 #Upload video here
-#cap = cv2.VideoCapture(r'D:\Videos\Logitech\LogiCapture\Test2.mp4')
 cap = cv2.VideoCapture('Test2.mp4')
+
 
 
 cap.set(10,160)
@@ -22,19 +22,33 @@ count=0
 
 while True:
     if webCamFeed:success, img = cap.read()
-    #img = cv2.imread(pathImage)
     img = cv2.resize(img, (widthImg, heightImg)) # RESIZE IMAGE
     imgBlank = np.zeros((heightImg,widthImg, 3), np.uint8) # CREATE A BLANK IMAGE FOR TESTING DEBUGING IF REQUIRED
+
     imgGray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY) # CONVERT IMAGE TO GRAY SCALE
     imgBlur = cv2.GaussianBlur(imgGray, (5, 5), 1) # ADD GAUSSIAN BLUR
     thres=utlis.valTrackbars() # GET TRACK BAR VALUES FOR THRESHOLDS
 
-    thresh = cv2.threshold(imgBlur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
+
+    #Thresolding
+    #thresh = cv2.threshold(imgBlur, 127, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
+    rt1,thresh = cv2.threshold(imgBlur, 127, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C)
+
+    kernel = np.ones((3, 3))
+
+
+    erodeThresh = cv2.erode(thresh,kernel,iterations=0)
+    binary = cv2.bitwise_not(erodeThresh)
+
+    (contours, _) = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+
+
+    cv2.imshow("eroded",img)
 
     imgCanny = cv2.Canny(thresh,thres[0],thres[1]) # APPLY CANNY BLUR
-    kernel = np.ones((5, 5))
     imgDial = cv2.dilate(imgCanny, kernel, iterations=2) # APPLY DILATION
     imgErode = cv2.erode(imgDial, kernel, iterations=1)  # APPLY EROSION
+
 
     ## FIND ALL COUNTOURS
     imgContours = img.copy() # COPY IMAGE FOR DISPLAY PURPOSES
@@ -84,7 +98,7 @@ while True:
     lables = [["Original","Gray","Blur","Threshold"],
               ["Canny","Dilate","Points","Warped"]]
 
-    stackedImage = utlis.stackImages(imageArray,0.6,lables)
+    stackedImage = utlis.stackImages(imageArray,0.5,lables)
     imgOutput = imgWarpColored
 
     if noScreen == 1:
@@ -101,7 +115,9 @@ while True:
     cv2.imshow("Output",imgOutput)
 
 
+
     # SAVE IMAGE WHEN 's' key is pressed
+    time.sleep(0.1)
     if cv2.waitKey(1) & 0xFF == ord('s'):
         cv2.imwrite("Scanned/myImage"+str(count)+".jpg",imgWarpColored)
         cv2.rectangle(stackedImage, ((int(stackedImage.shape[1] / 2) - 230), int(stackedImage.shape[0] / 2) + 50),
